@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	cocore.InitApp(true, "", "$GOPATH/src/go_svc/ocls_tasks/conf", "")
+	cocore.InitApp(true, "", "$GOPATH/src/github.com/legenove/redis_client/conf", "")
 }
 
 func TestGetRedisClient(t *testing.T) {
