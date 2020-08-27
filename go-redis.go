@@ -75,12 +75,21 @@ func getRedisConf(key string) (*RedisSetting, error) {
 func newRedisConfig() error {
 	var err error
 	redisFileName := cocore.App.GetStringConfig("redis_conf", "redis.toml")
-	redisConf, err = cocore.Conf.Instance(redisFileName, nil, configChange, nil)
+	redisConf, err = cocore.Conf.Instance(redisFileName, nil)
+	go listenOnRedisChange(redisConf)
 	return err
 }
 
-func configChange(v *viper_conf.ViperConf) {
-	removeRedis()
+func listenOnRedisChange(v *viper_conf.ViperConf) {
+	if v != nil {
+		<- v.OnChange
+		for {
+			select {
+			case <- v.OnChange:
+				removeRedis()
+			}
+		}
+	}
 }
 
 func GetRedisClient(key string) (*redis.Client, error) {
