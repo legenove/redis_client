@@ -1,0 +1,26 @@
+default_redis:
+  RouterName: default_redis
+  Type: master              # "master" - "slaver" - "cluster"
+  Url: 127.0.0.1:6379       # host:port
+  Password: ""              # password
+  DB: 0                     # 选择数据库
+  PoolSize: 100             # 链接池最大数量,                     go-redis 默认 10
+  MinIdleConns: 20          # 链接池最小存活链接数量，默认无
+  DialTimeout: 1            # 创建链接超时，秒,                   go-redis 默认 5 s
+  ReadTimeout: 10000        # 读超时，毫秒,                      go-redis 默认 3000 毫秒
+  WriteTimeout: 3000        # 写超时，毫秒,                      go-redis 默认 ReadTimeout
+  IdleTimeout: 120          # 最后使用的空闲时间，后重新进行链接，秒, go-redis 默认 300 s(5min)
+  IdleCheckFrequency: 30    # 默认检测时间，秒,                   go-redis 默认 60 s(1min)
+queue_redis:
+  RouterName: queue_redis
+  Type: master              # "master" - "slaver" - "cluster"
+  Url: 127.0.0.1:6379       # host:port
+  Password: ""              # password
+  DB: 0                     # 选择数据库
+  PoolSize: 100             # 链接池最大数量,                     go-redis 默认 10
+  MinIdleConns: 20          # 链接池最小存活链接数量，默认无
+  DialTimeout: 1            # 创建链接超时，秒,                   go-redis 默认 5 s
+  ReadTimeout: 10000        # 读超时，毫秒,                      go-redis 默认 3000 毫秒
+  WriteTimeout: 3000        # 写超时，毫秒,                      go-redis 默认 ReadTimeout
+  IdleTimeout: 120          # 最后使用的空闲时间，后重新进行链接，秒, go-redis 默认 300 s(5min)
+  IdleCheckFrequency: 30    # 默认检测时间，秒,                   go-redis 默认 60 s(1min)

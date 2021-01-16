@@ -7,7 +7,16 @@ import (
 )
 
 func init() {
-	cocore.InitApp(true, "", "$GOPATH/src/github.com/legenove/redis_client/conf", "")
+	cocore.InitApp(true, "", cocore.ConfigParam{
+		Type:      cocore.TYPE_CONFIG_FILE,
+		Name:      "app.toml",
+		ParseType: "toml",
+		Nacos:     nil,
+		File: &cocore.FileParam{
+			Env:       "",
+			ConfigDir: "$GOPATH/src/github.com/legenove/redis_client/conf",
+		},
+	})
 }
 
 func TestGetRedisClient(t *testing.T) {

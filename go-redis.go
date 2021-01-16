@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/legenove/cocore"
-	"github.com/legenove/viper_conf"
+	"github.com/legenove/easyconfig/ifacer"
 	"sync"
 )
 
@@ -15,7 +15,7 @@ type mangers struct {
 	sync.Mutex
 }
 
-var redisConf *viper_conf.ViperConf
+var redisConf ifacer.Configer
 var Manager = &mangers{clients: make(map[string]*redis.Client), clusters: make(map[string]*redis.ClusterClient)}
 var redisSettings = make(map[string]*RedisSetting)
 
@@ -65,7 +65,7 @@ func getRedisConf(key string) (*RedisSetting, error) {
 		}
 	}
 	var setting RedisSetting
-	err := redisConf.GetConf().UnmarshalKey(key, &setting)
+	err := redisConf.UnmarshalKey(key, &setting)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid redis conf:%s; err:%s", key, err.Error())
 	}
@@ -74,18 +74,19 @@ func getRedisConf(key string) (*RedisSetting, error) {
 
 func newRedisConfig() error {
 	var err error
-	redisFileName := cocore.App.GetStringConfig("redis_conf", "redis.toml")
-	redisConf, err = cocore.Conf.Instance(redisFileName, nil)
+	redisFileName := cocore.App.GetStringConfig("redis_conf", "redis.yaml")
+	redisFileType := cocore.App.GetStringConfig("redis_conf_type", "yaml")
+	redisConf, err = cocore.Conf.Instance(redisFileName, redisFileType, nil)
 	go listenOnRedisChange(redisConf)
 	return err
 }
 
-func listenOnRedisChange(v *viper_conf.ViperConf) {
+func listenOnRedisChange(v ifacer.Configer) {
 	if v != nil {
-		<- v.OnChange
+		<-v.OnChangeChan()
 		for {
 			select {
-			case <- v.OnChange:
+			case <-v.OnChangeChan():
 				removeRedis()
 			}
 		}
