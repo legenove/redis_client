@@ -1,4 +1,4 @@
-package redis_client
+package rediscore
 
 import "time"
 

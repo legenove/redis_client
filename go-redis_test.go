@@ -1,14 +1,16 @@
-package redis_client
+package rediscore
 
 import (
+	"context"
 	"fmt"
-	"github.com/legenove/cocore"
 	"testing"
+
+	"github.com/legenove/cocore"
 )
 
 func init() {
-	cocore.InitApp(true, "", cocore.ConfigParam{
-		Type:      cocore.TYPE_CONFIG_FILE,
+	cocore.InitApp(true, "", cocore.AppParam{
+		Source:    cocore.SOURCE_CONFIG_FILE,
 		Name:      "app.toml",
 		ParseType: "toml",
 		Nacos:     nil,
@@ -25,5 +27,8 @@ func TestGetRedisClient(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(client.Ping().Result())
+	x := client.Ping(context.Background())
+	fmt.Println(x.Val())
+	fmt.Println(x.Err())
+	fmt.Println(x.Result())
 }

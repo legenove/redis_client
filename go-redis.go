@@ -1,13 +1,21 @@
-package redis_client
+package rediscore
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis"
+	"github.com/legenove/utils"
+	"sync"
+	"time"
+
+	"github.com/go-redis/redis/v8"
 	"github.com/legenove/cocore"
 	"github.com/legenove/easyconfig/ifacer"
-	"sync"
 )
+
+type closer interface {
+	Close() error
+}
 
 type mangers struct {
 	clients  map[string]*redis.Client
@@ -15,9 +23,19 @@ type mangers struct {
 	sync.Mutex
 }
 
+type closeManagers struct {
+	cli closer
+	rat int64
+}
+
 var redisConf ifacer.Configer
 var Manager = &mangers{clients: make(map[string]*redis.Client), clusters: make(map[string]*redis.ClusterClient)}
+var pendclose = map[string]closeManagers{}
 var redisSettings = make(map[string]*RedisSetting)
+
+//func init() {
+//	keeper.SetKeeper(random.UuidV5(), closeRedis, time.Second*600, false)
+//}
 
 func loadRedisManager(rsettings []*RedisSetting, b ...bool) {
 	preload := true
@@ -46,8 +64,38 @@ func loadRedisManager(rsettings []*RedisSetting, b ...bool) {
 func removeRedis() {
 	Manager.Lock()
 	defer Manager.Unlock()
-	Manager = &mangers{clients: make(map[string]*redis.Client), clusters: make(map[string]*redis.ClusterClient)}
+	nowAt := time.Now()
+	nowS := nowAt.Format("20060102150405.999999")
+	nowT := nowAt.Unix()
+	for k, v := range Manager.clients {
+		pendclose[utils.ConcatenateStrings(k, nowS, "_client")] = closeManagers{
+			cli: v,
+			rat: nowT,
+		}
+	}
+	Manager.clients = make(map[string]*redis.Client)
+	for k, v := range Manager.clusters {
+		pendclose[utils.ConcatenateStrings(k, nowS, "_cluster")] = closeManagers{
+			cli: v,
+			rat: nowT,
+		}
+	}
+	Manager.clusters = make(map[string]*redis.ClusterClient)
 	redisSettings = make(map[string]*RedisSetting)
+}
+
+func closeRedis() error {
+	Manager.Lock()
+	defer Manager.Unlock()
+	nowAt := time.Now().Unix()
+	for k, v := range pendclose {
+		if nowAt-v.rat > 600 {
+			// 十分钟后自动关闭，防止链接泄漏
+			v.cli.Close()
+			delete(pendclose, k)
+		}
+	}
+	return nil
 }
 
 func getRedisConf(key string) (*RedisSetting, error) {
@@ -97,6 +145,7 @@ func GetRedisClient(key string) (*redis.Client, error) {
 	return Manager.GetRedisClient(key)
 }
 
+// Todo 先预留，没有测试过，setting可能和单点redis不同。
 func GetRedisCluster(key string) (*redis.ClusterClient, error) {
 	return Manager.GetRedisClusterClient(key)
 }
@@ -159,8 +208,8 @@ func newRedisClient(setting *RedisSetting) *redis.Client {
 		WriteTimeout:       setting.GetWriteTimeout(),
 		IdleTimeout:        setting.GetIdleTimeout(),
 		IdleCheckFrequency: setting.GetIdleCheckFrequency(),
-		OnConnect: func(conn *redis.Conn) error {
-			_, err := conn.Ping().Result()
+		OnConnect: func(ctx context.Context, conn *redis.Conn) error {
+			_, err := conn.Ping(ctx).Result()
 			return err
 		},
 	}
